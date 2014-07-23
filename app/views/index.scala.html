@@ -1,0 +1,32 @@
+@(animals: List[Animal])
+<!DOCTYPE html>
+<html>
+<head>
+<title>Sortable animals</title>
+<script src='@routes.WebJarAssets.at(WebJarAssets.locate("jquery.min.js"))'></script>
+<script src='@routes.WebJarAssets.at(WebJarAssets.locate("jquery-ui.min.js"))'></script>
+<script src='@routes.Assets.at("sortable.js")'></script>
+<link rel='stylesheet' href='@routes.WebJarAssets.at(WebJarAssets.locate("css/bootstrap.min.css"))'>
+<link rel='stylesheet' href='@routes.Assets.at("stylesheets/main.css")'>
+</head>
+<body>
+
+<div class="container">
+
+  <h1>Animals</h1>
+
+  <p>Drag an item to reposition. Reload the page to see that it’s persistent.</p>
+
+  <ul id="sortable" class="list-group" data-url="@routes.Application.reposition">
+    @for(animal <- animals) {
+      <li class="list-group-item">
+        <span class="badge">@animal.position</span>
+        @animal.name
+      </li>
+    }
+  </ul>
+
+</div>
+
+</body>
+</html>

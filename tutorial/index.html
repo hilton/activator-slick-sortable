@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Play/Slick backend for JQuery UI Sortable</title>
+</head>
+<body>
+
+<div>
+  <h2>jQuery UI Sortable</h2>
+
+  <p>A to-do list is a good example of a simple web application with one tricky
+  requirement: you want to be able to put the items in any order you like. With
+  standard HTML interaction, this probably means awkward <em>Move Up</em> and
+  <em>Move Down</em> buttons next to each item. More elegant user-interaction
+  would use drag-and-drop.</p>
+
+  <p><a href="http://jqueryui.com/sortable/">jQuery UI Sortable</a> is a jQuery
+  UI interaction that provides drag-and-drop support, for manually reordering
+  web page elements. This is easy to set-up, but doesn’t solve the to-do list
+  problem unless you can integrate it with a server-side API that will persist
+  the changes.</p>
+
+  <p>This tutorial shows how to integrate the a jQuery UI JavaScript client with
+  a Play Framework server-side that uses Slick to save changes to a database.</p>
+
+  <p>To focus on the server-side integration, this tutorial only has a
+  simplistic JavaScript client, uses Twitter Bootstrap for the look-and-feel,
+  and saves changes in an in-memory H2 database.</p>
+</div>
+
+
+<div>
+  <h2>Defining the data model</h2>
+
+  <p>To make the data simpler than a to-do list, this example is just a fixed
+  list of animal names. This is set-up in several steps.</p>
+
+  <p><a href="#code/app/models/Animal.scala" class="shortcut">app/models/Animal.scala</a>
+  defines an <code>Animal</code> case class, which is the domain model. Note
+  that this model includes an `id` property, for the database primary key.</p>
+
+  <p><a href="#code/app/models/db/Animals.scala" class="shortcut">app/models/db/Animals.scala</a>
+  defines the database model, as a Slick table mapping for the
+  <code>Animal</code> model. As you can see from the column options and the
+  unique index, the <code>POSITION</code> column must contain a unique integer
+  value. In the application code, we will further constrain these values to be
+  consecutive, starting at 1.</p>
+
+  <p><strong>Tip:</strong> note that the database table and attribute (column)
+  names are defined in upper-case. This is because database identifiers are
+  case-sensitive, and the H2 database emulates Oracle’s behaviour of
+  transforming unquoted identifiers in SQL into upper case. This can result in
+  unexpected runtime SQL errors like ‘Table "animals" not found’ (because
+  <code>create table animals</code>… resulted in the table name
+  <code>ANIMALS</code>).</p>
+
+  <p><a href="#code/conf/evolutions/default/1.sql" class="shortcut">conf/evolutions/default/1.sql</a>
+  is the Play evolutions file that contains the SQL DDL script to create the
+  database, and create test data. Slick will generate this for you if you inspect
+  <code>TableQuery[Animals].ddl.createStatements</code>. This requires a Slick
+  database session in scope, so you could log this from a data access method…</p>
+</div>
+
+<div>
+  <h2>Displaying the data</h2>
+
+  <p><a href="#code/app/models/Animal.scala" class="shortcut">app/models/Animal.scala</a>
+  defines an <code>Animal</code> Scala object that contains data access methods.
+  For displaying data, we only need <code>Animal.list</code>, which returns a
+  sorted list of <code>models.Animal</code> instances.</p>
+
+  <p><a href="#code/app/controllers/Application.scala" class="shortcut">app/controllers/Application.scala</a>
+  defines a trivial <code>index</code> controller action that renders the list
+  of animals.</p>
+
+  <p><a href="#code/app/views/index.scala.html" class="shortcut">app/views/index.scala.html</a>
+  is the HTML template that renders the list of animals. The template’s
+  <code>HEAD</code> section refers to several third-party resources made
+  available via Webjars imports in
+  <a href="#code/build.sbt" class="shortcut">build.sbt</a>:</p>
+
+  <ol>
+    <li>jQuery - JavaScript</li>
+    <li>jQuery UI - JavaScript</li>
+    <li>Twitter Bootstrap - CSS</li>
+  </ol>
+
+  <p>Otherwise, the template simply renders the <code>List[Animal]</code>
+  parameter as an HTML list, using CSS classes for Twitter Bootstrap. Note the
+  <code>span</code> for the Bootstrap ‘badge’ component: not functionally
+  necessary, but included here so you can see the position values in the user
+  interface.</p>
+</div>
+
+<div>
+  <h2>JavaScript client interaction</h2>
+  <p></p>
+</div>
+
+<div>
+  <h2>Server-side ‘position’ API</h2>
+  <p></p>
+</div>
+
+<div>
+  <h2>Updating the position in the database</h2>
+  <p></p>
+</div>
+
+</body>
