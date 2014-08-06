@@ -17,25 +17,27 @@ object Application extends Controller {
 
   /**
    * Updates an animal’s position. Use a form so we can generate a URL without
-   * paramters in the template, and do validation
+   * parameters in the template, and do validation.
    */
   def reposition = Action { implicit request =>
-    Logger.info("setPosition")
+    Logger.trace("setPosition")
 
     case class Position(from: Int, to: Int)
 
+    // HTML form structure for the HTTP request.
     val form = Form(mapping(
       "from" -> number(min = 1),
       "to" -> number(min = 1)
     )(Position.apply)(Position.unapply))
 
+    // Use the form to parse the data in the HTTP PUT request body.
     form.bindFromRequest.fold(
       formWithErrors => {
-        Logger.info("errors: " + formWithErrors.errorsAsJson)
+        Logger.warn("errors: " + formWithErrors.errorsAsJson)
         BadRequest(formWithErrors.errorsAsJson)
       },
       position => {
-        Logger.info(s"controller: from ${position.from} to ${position.to}")
+        Logger.trace(s"controller: from ${position.from} to ${position.to}")
         Animal.reposition(position.from, position.to)
         Ok
       })

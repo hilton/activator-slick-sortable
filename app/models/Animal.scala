@@ -16,6 +16,7 @@ case class Animal(id: Option[Int], name: String, position: Int)
  */
 object Animal {
 
+  // Base Slick database query to use for data access.
   val animals = TableQuery[Animals]
 
   /**
@@ -27,24 +28,28 @@ object Animal {
 
   /**
    * Move one animal from one position to another, adjusting the position of
-   * other items, to preserve consecutive ordering.
+   * other items, to preserve consecutive ordering. There is no check for an
+   * invalid `fromPosition`; `toPosition` is checked in `shiftIntermediateItems`.
    *
-   * @param fromPosition The animal’s original position.
-   * @param toPosition The animal’s new position in the list.
+   * @param from The animal’s original position.
+   * @param to The animal’s new position in the list.
    */
-  def reposition(fromPosition: Int, toPosition: Int): Unit = DB.withSession {
+  def reposition(from: Int, to: Int): Unit = DB.withSession {
     implicit s: Session =>
 
-    if (fromPosition != toPosition) {
+    if (from != to) {
 
+      // Invalid position to use during the reposition (valid positions are > 0).
+      val NonPosition = -1
+      
       // Take the moved item out of the ordering.
-      animals.filter(_.position === fromPosition).map(_.position).update(-1)
+      animals.filter(_.position === from).map(_.position).update(NonPosition)
 
       // Shift the items between the from and to positions.
-      shiftIntermediateItems(fromPosition, toPosition)
+      shiftIntermediateItems(from, to)
 
       // Update the moved item’s position.
-      animals.filter(_.position === -1).map(_.position).update(toPosition)
+      animals.filter(_.position === NonPosition).map(_.position).update(to)
     }
   }
 
@@ -66,6 +71,8 @@ object Animal {
       import scala.slick.jdbc.StaticQuery
       val updateQuery = StaticQuery.update[(Int, Int)](updateSql)
       val rowsUpdated = updateQuery((fromPosition, toPosition)).first
+
+      // Check that the expected number of rows were updated to catch bad input.
       assert(rowsUpdated == Math.abs(fromPosition - toPosition))
     }
   }
