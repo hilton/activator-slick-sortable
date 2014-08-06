@@ -39,5 +39,15 @@ class ApplicationSpec extends Specification {
         val animals = Animal.list
         animals.map(_.position) must beEqualTo((1 to animals.size).toList)
     }
+
+    "throw an exception for an out-of-bounds from position" in
+      new WithApplication(FakeApplication(additionalConfiguration = inMemoryDatabase("test"))) {
+        Animal.reposition(-10, 2) must throwA[IllegalArgumentException]
+      }
+
+    "throw an exception for an out-of-bounds to position" in
+      new WithApplication(FakeApplication(additionalConfiguration = inMemoryDatabase("test"))) {
+        Animal.reposition(1, 100) must throwA[IllegalArgumentException]
+      }
   }
 }

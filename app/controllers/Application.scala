@@ -6,6 +6,8 @@ import play.api.data.Form
 import play.api.data.Forms._
 import play.api.mvc.{Action, Controller}
 
+import scala.util.{Success, Try, Failure}
+
 object Application extends Controller {
 
   /**
@@ -38,8 +40,11 @@ object Application extends Controller {
       },
       position => {
         Logger.trace(s"controller: from ${position.from} to ${position.to}")
-        Animal.reposition(position.from, position.to)
-        Ok
+
+        Try(Animal.reposition(position.from, position.to)) match {
+          case Failure(error) => BadRequest(error.getMessage)
+          case Success(_) => Ok
+        }
       })
   }
 
