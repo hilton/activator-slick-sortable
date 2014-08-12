@@ -1,4 +1,4 @@
-name := "activator-slick-sortable"
+name := "slick-sortable"
 
 version := "1.0-SNAPSHOT"
 

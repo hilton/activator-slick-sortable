@@ -7,29 +7,73 @@
 <body>
 
 <div>
-  <h2>jQuery UI Sortable</h2>
+  <h2>Tutorial overview</h2>
 
-  <p>A to-do list is a good example of a simple web application with one tricky
+  <p>A web-based to-do list, for example, is a simple application with a tricky
   requirement: you want to be able to put the items in any order you like. With
   standard HTML interaction, this probably means awkward <em>Move Up</em> and
-  <em>Move Down</em> buttons next to each item. More elegant user-interaction
-  would use drag-and-drop.</p>
+  <em>Move Down</em> buttons next to each item. Drag-and-drop is better for
+  this.</p>
 
-  <p><a href="http://jqueryui.com/sortable/">jQuery UI Sortable</a> is a jQuery
-  UI interaction that provides drag-and-drop support, for manually reordering
-  web page elements. This is easy to set-up, but doesn’t solve the to-do list
-  problem unless you can integrate it with a server-side API that will persist
-  the changes.</p>
+  <p><img src="tutorial/screenshot.png" alt="Tutorial application"></p>
 
-  <p>This tutorial shows how to integrate the a jQuery UI JavaScript client with
-  a <a href="http://playframework.com/">Play Framework</a> server-side that uses
-  <a href="http://slick.typesafe.com/">Slick</a> to save changes to a
-  database.</p>
+  <p>The goal of this tutorial is to show you how to make a sortable list of
+  animal names using a JavaScript library front-end and a Typesafe platform
+  back-end.</p>
 
-  <p>To focus on the server-side integration, this tutorial only has a
-  simplistic JavaScript client, uses <a href="http://getbootstrap.com">Twitter
-  Bootstrap</a> for the look-and-feel, and saves changes in an in-memory <a
-  href="http://www.h2database.com/">H2 database</a>.</p>
+  <p>This tutorial shows you how to integrate the client, server and database
+  components that you need to manually reorder a list, and persist changes.
+  These components are:</p>
+
+  <ul>
+  <li><a href="http://jqueryui.com/sortable/">jQuery UI Sortable</a> JavaScript
+  client - handles user interaction and uses the server API</li>
+  <li><a href="http://playframework.com/">Play Framework</a> server - renders
+  the HTML view and provides the server-side API</li>
+  <li><a href="http://slick.typesafe.com/">Slick</a> database mapping layer -
+  saves changes to a database.</li>
+  </ul>
+
+  <p>This tutorial demonstrates the simplicity of a Play Framework server API,
+  and a straightforward Slick persistence layer. The result is little more than
+  100 lines of Scala code, in an application structure that can scale up to a
+  large but maintainable application.</p>
+</div>
+
+
+<div>
+  <h2>Application structure</h2>
+
+  <p>The application is uses the standard Play Framework application structure,
+  with a JavaScript client.</p>
+
+  <p><img src="tutorial/components.png" alt="Application components"></p>
+
+  <p>The application fits together in the following order, starting with the
+  data and adding the code that uses it.</p>
+
+  <ol>
+  <li>The <a href="#code/app/models/" class="shortcut"><code>models</code></a>
+  package defines the domain model, which includes a database mapping and test
+  data.</li>
+  <li>The <a href="#code/app/controllers/" class="shortcut"><code>controllers</code></a>
+  and <a href="#code/app/views/" class="shortcut"><code>views</code></a>
+  packages provide the server-side web application that renders the data.</li>
+  <li>The JavaScript code in
+  <a href="#code/app/assets/" class="shortcut"><code>app/assets/</code></a>
+  defines the client-side interaction.</li>
+  <li>The <a href="#code/app/controllers/" class="shortcut"><code>controllers</code></a>
+  package provides the API that the JavaScript client uses.</li>
+  <li>The <a href="#code/app/models/" class="shortcut"><code>models</code></a>
+  package persists changes in the database.</li>
+  </ol>
+
+  <p>The rest of the tutorial will show you each of these, in turn. By seeing
+  how each part works, you will be able to understand how they fit together.</p>
+
+  <p><strong>Tip:</strong> it is also possible to start with the user interface
+  and user interaction instead, and from there explore the API it uses and the
+  API’s back-end. For now, let’s start with the data model.</p>
 </div>
 
 
@@ -37,41 +81,68 @@
   <h2>Defining the data model</h2>
 
   <p>To make the data simpler than a to-do list, this example is just a fixed
-  list of animal names. This is set-up in several steps.</p>
+  list of animal names. The data model consists of a single <code>Animal</code>
+  entity, which has a name and a position in the list (starting at 1).</p>
+
+  <p style="text-align:center"><img src="tutorial/model.png" alt="Domain model"></p>
+
+  <p>The model is set-up in several steps.</p>
 
   <p><a href="#code/app/models/Animal.scala" class="shortcut">app/models/Animal.scala</a>
-  defines an <code>Animal</code> case class, which is the domain model. Note
-  that this model includes an `id` property, for the database primary key.</p>
+  defines an <code>Animal</code> case class for the domain model. Note that this
+  model includes an <code>id</code> property, for the database primary key. We
+  will return to the ‘data access functions’ in the companion object later.</p>
 
   <p><a href="#code/app/models/db/Animals.scala" class="shortcut">app/models/db/Animals.scala</a>
   defines the database model, as a Slick table mapping for the
-  <code>Animal</code> model. As you can see from the column options and the
-  unique index, the <code>POSITION</code> column must contain a unique integer
-  value. In the application code, we will further constrain these values to be
-  consecutive, starting at 1.</p>
+  <code>Animal</code> case class. As you can see from the declarations of
+  <code>position</code> and <code>positionIndex</code>, the
+  <code>POSITION</code> column must contain a unique integer value. In the
+  application code, we will further constrain these values to be consecutive,
+  starting at 1.</p>
 
   <p><strong>Tip:</strong> note that the database table and attribute (column)
   names are defined in upper-case. This is because database identifiers are
   case-sensitive, and the H2 database emulates Oracle’s behaviour of
   transforming unquoted identifiers in SQL into upper case. This can result in
-  unexpected runtime SQL errors like ‘Table "animals" not found’ (because
-  <code>create table animals</code>… resulted in the table name
+  unexpected runtime SQL errors like <em>Table "animals" not found</em> (because
+  <code>create table animals</code> resulted in the table name
   <code>ANIMALS</code>).</p>
 
   <p><a href="#code/conf/evolutions/default/1.sql" class="shortcut">conf/evolutions/default/1.sql</a>
   is the Play evolutions file that contains the SQL DDL script to create the
-  database, and create test data. Slick will generate this for you if you inspect
+  database, and create test data. You can write this script by hand or use Slick
+  to generate the SQL create statements by inspecting
   <code>TableQuery[Animals].ddl.createStatements</code>. This requires a Slick
-  database session in scope, so you could log this from a data access method…</p>
+  database session in scope, so you could log this from one of the data access
+  functions that you create later.</p>
+
+  <p>To keep things simple for this tutorial, we use an in-memory
+  <a href="http://www.h2database.com/">H2 database</a>, which is configured in
+  <a href="#code/conf/application.conf" class="shortcut">conf/application.conf</a></p>
 </div>
 
 <div>
   <h2>Displaying the data</h2>
 
+  <p>To display the data, this application uses a standard Play HTML template to
+  to display the list of model objects returned by a single database query.</p>
+
+  <p>To keep things simple for this tutorial, we use
+  <a href="http://getbootstrap.com">Twitter Bootstrap</a> for the look-and-feel.
+  This is also a good way to keep things simple for some real applications.</p>
+
   <p><a href="#code/app/models/Animal.scala" class="shortcut">app/models/Animal.scala</a>
   defines an <code>Animal</code> Scala object that contains data access methods.
   For displaying data, we only need <code>Animal.list</code>, which returns a
   sorted list of <code>models.Animal</code> instances.</p>
+
+  <p><strong>Tip:</strong> always sort collections that will be displayed in the
+  user interface, because ‘random order’ is probably not the most useful. If you
+  have multiple query methods, then you can use a common base query for
+  consistent ordering across queries, without code duplication:</p>
+
+  <p><code>val sortedAnimals = animals.sortBy(_.position)</code></p>
 
   <p><a href="#code/app/controllers/Application.scala" class="shortcut">app/controllers/Application.scala</a>
   defines a trivial <code>index</code> controller action that renders the list
@@ -90,25 +161,155 @@
   </ol>
 
   <p>Otherwise, the template simply renders the <code>List[Animal]</code>
-  parameter as an HTML list, using CSS classes for Twitter Bootstrap. Note the
-  <code>span</code> for the Bootstrap ‘badge’ component: not functionally
-  necessary, but included here so you can see the position values in the user
-  interface.</p>
+  parameter as an HTML list, using CSS classes for Twitter Bootstrap.</p>
+
+  <p><strong>Note:</strong> the view includes a <code>span</code> for a
+  Bootstrap ‘badge’ component that shows each animal’s position. This is not
+  functionally necessary, but included here so you can see the position values
+  in the user interface.</p>
 </div>
 
 <div>
-  <h2>JavaScript client interaction</h2>
-  <p></p>
+  <h2>Adding client-side interaction</h2>
+
+  <p>To focus on the server-side integration, this tutorial only has a
+  simplistic JavaScript client, using a
+  <a href="http://jqueryui.com/">jQuery UI</a> component.</p>
+
+  <p><a href="http://jqueryui.com/sortable/">jQuery UI Sortable</a> is a jQuery
+  UI interaction that provides drag-and-drop support, for manually reordering
+  web page elements. This is easy to set-up, but doesn’t solve the to-do list
+  problem unless you can integrate it with a server-side API that will persist
+  the changes.</p>
+
+  <p><a href="#code/app/assets/sortable.js" class="shortcut">app/assets/sortable.js</a>
+  consists entirely of initialising <code>sortable</code> jQuery plug-in on the
+  HTML list, selected by ID. This code has two purposes:</p>
+
+  <ol>
+  <li>Visually indicate when dragging starts and stops.</li>
+  <li>Send an HTTP PUT request to the server to reposition the list item.</li>
+  </ol>
+
+  <p>The code sends the HTTP request using jQuery’s <code>ajax</code> function,
+  which uses standard HTML form encoding to send the JavaScript object passed to
+  the <code>data</code> parameter. In this case, this is more convenient than
+  using JSON or XML, both on the client and on the server.</p>
+
+  <p>What’s missing is proper error handling. For example, if the call to the
+  server results in an error, it would be better to display a message and move
+  the dragged item back to its original position, since the reordering was not
+  successful. This is the kind of functionality provided by the DataTables
+  <a href="https://code.google.com/p/jquery-datatables-row-reordering/wiki/Index">Row
+  Reordering plugin</a>.</p>
+
+  <p><strong>Note:</strong> this JavaScript code mixes the interaction with the
+  server and updates to the HTML, which makes the code shorter but harder to
+  maintain. For a real application, it would be better to separate these
+  concerns.</p>
 </div>
 
 <div>
-  <h2>Server-side ‘position’ API</h2>
-  <p></p>
+  <h2>Defining the server API</h2>
+
+  <p>For the client-side interaction to work, we have to define the server-side
+  API for the ‘reposition item’ request. The client will use this API to update
+  a position, giving the old position and the new position.</p>
+
+  <p><a href="#code/conf/routes" class="shortcut">conf/routes</a> defines the
+  HTTP API: an action that handles a PUT request for the <code>/position</code>
+  resource. We use PUT because we are updating an existing resource. The client
+  will send the old and new positions in the request body, so we don’t see these
+  parameters declared here.</p>
+
+  <p><a href="#code/app/controllers/Application.scala" class="shortcut">app/controllers/Application.scala</a>
+  is the Play Framework controller that defines the <code>reposition</code>
+  action that will handle the HTTP request. To keep the request data neat, this
+  action uses a Play form mapping to map the form data in the request body to an
+  instance of the <code>Position</code> case class.</p>
+
+  <p>The form mapping uses the <code>min = 1</code> constraint to require
+  positive numbers for positions; if the form data violates one of these
+  constraints then binding the request data to the form will generate an error,
+  and we will use Play’s <code>BadRequest</code> result to to generate a
+  <em>400 Bad Request</em> HTTP response. Otherwise, we attempt to use the
+  <code>Animal.reposition</code> data access function to reposition the item.</p>
+
+  <p><strong>Tip:</strong> it isn’t always easy to see which kind of HTTP API
+  will work best in a particular application. Sometimes the best thing to do is
+  to try various options for whether to pass data in the URL path, query string
+  or request body, for example, and see what results in the most elegant API and
+  implementation.</p>
+
 </div>
 
 <div>
-  <h2>Updating the position in the database</h2>
-  <p></p>
+  <h2>Updating the saved position</h2>
+
+  <p>Saving changes to an item’s position requires two database updates.</p>
+
+  <ol>
+  <li>The position of the moved item must be updated from the old position to
+  the new position.</li>
+  <li>All of the items between the old and new positions must be shifted up or
+  down by one position.</li>
+  </ol>
+
+  <p><a href="#code/app/models/Animal.scala" class="shortcut">app/models/Animal.scala</a>
+  includes the <code>Animal.reposition</code> function that performs the
+  database update, using Slick. There are several parts to getting this right.</p>
+
+  <p>First, updating the moved item’s position is split into two steps: its
+  position is first set to -1. This is to avoid a unique constraint violation
+  when shifting the intermediate items. The moved item’s final position is set
+  last.</p>
+
+  <p>Second, the three updates are wrapped in a transaction, so that all of them
+  succeed or (if one fails) none of them succeed. This preserves data integrity.</p>
+
+  <p>Finally, shifting the intermediate items up or down by one position turns
+  out to be more tricky, which is why it’s extracted into a separate function.
+  It turns out that the Slick DSL does not currently support this kind of
+  relative update, like <code>set position = position + 1</code>. Updating
+  multiple rows like this is also something that Object-Relational Mapping (ORM)
+  libraries cannot generally do either.</p>
+
+  <p>Fortunately, Slick supports native SQL using <code>StaticQuery</code>. This
+  supports bind parameters with declared types, which allows the Scala API to
+  remain type-safe.</p>
+
+  <p><strong>Note:</strong> executing the update query returns the number of
+  database rows updated. This is a good opportunity to check for error
+  conditions, because invalid (out of range) positions will result in the wrong
+  number of rows being updated, which allows us to cause this update to fail,
+  and hence the whole reposition operation.</p>
+
+  <p><strong>Advanced exercise:</strong> work out why the update in
+  <code>shiftIntermediateItems</code> only works with the <code>MVCC=true</code>
+  option on the database connection, configured in
+  <a href="#code/conf/application.conf" class="shortcut">conf/application.conf</a>.
+  Hint: one table, one transaction, three updates.</p>
+</div>
+
+<div>
+  <h2>Next steps</h2>
+
+  <p>Make this example production-ready, by improving the client side error
+  handling and migrate the database configuration and SQL script to the database
+  you use in production.</p>
+
+  <p>This example used
+  <a href="http://jqueryui.com/sortable/">jQuery UI Sortable</a> for ordering
+  items in an HTML list. As an alternative, use
+  <a href="https://datatables.net">DataTables</a> and the
+  <a href="https://code.google.com/p/jquery-datatables-row-reordering/wiki/Index">Row
+  Reordering plugin</a> for ordering rows in a table.</p>
+
+  <p><a href="http://jqueryui.com/">jQuery UI</a> includes a number of other
+  interactions and widgets. Try using the same approach to integrate them with
+  a Play Framework server and a Slick peristence back-end. For example, use
+  <a href="http://jqueryui.com/draggable/">jQuery UI Draggable</a> to allow the
+  user to rearrange application interface elements, and make changes persistent.</p>
 </div>
 
 </body>
